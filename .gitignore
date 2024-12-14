@@ -1,0 +1,44 @@
+# Bỏ qua các thư mục build
+bin/
+obj/
+
+# Bỏ qua các file tạm thời của Visual Studio
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Bỏ qua các file log
+*.log
+
+# Bỏ qua các file cấu hình tạm thời
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+
+# Bỏ qua các file cache
+.vscode/
+.vs/
+.env
+.idea/
+
+# Bỏ qua các file tạo bởi hệ thống
+Thumbs.db
+*.DS_Store
+
+# Bỏ qua các file thư viện hoặc phụ thuộc
+node_modules/
+packages/
+
+# Bỏ qua các file xuất bản
+publish/
+*.publishsettings
+
+# Bỏ qua Docker
+.docker/
+docker-compose.override.yml
+
+# Bỏ qua tệp tạm thời
+*.tmp
+*.temp
+*.bak
