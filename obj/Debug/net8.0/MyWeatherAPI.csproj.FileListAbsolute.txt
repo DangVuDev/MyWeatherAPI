@@ -46,3 +46,4 @@ D:\Benet\MyWeatherAPI\obj\Debug\net8.0\MyWeatherAPI.pdb
 D:\Benet\MyWeatherAPI\obj\Debug\net8.0\MyWeatherAPI.genruntimeconfig.cache
 D:\Benet\MyWeatherAPI\obj\Debug\net8.0\ref\MyWeatherAPI.dll
 D:\Benet\MyWeatherAPI\bin\Debug\net8.0\Newtonsoft.Json.dll
+D:\Benet\MyWeatherAPI\obj\Debug\net8.0\MyWeatherAPI.sourcelink.json
