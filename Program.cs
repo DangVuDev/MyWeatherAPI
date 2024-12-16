@@ -13,7 +13,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp",
         policy =>
         {
-            policy.WithOrigins("https://myweatherweb.onrender.com") // Địa chỉ frontend React
+            policy.WithOrigins("https://myweatherweb.onrender.com") // Địa chỉ frontend React.WithOrigins("http://localhost:3000")
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
