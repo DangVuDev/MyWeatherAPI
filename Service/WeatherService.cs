@@ -24,52 +24,69 @@ public class WeatherService
     var content = await response.Content.ReadAsStringAsync();
     var weatherData = JsonSerializer.Deserialize<JsonElement>(content);
 
+    // Lấy múi giờ từ API
+    int timezoneOffset = weatherData.GetProperty("city").GetProperty("timezone").GetInt32();
+    var nowUtc = DateTime.UtcNow;
+    var nowLocal = nowUtc.AddSeconds(timezoneOffset); // Chuyển sang giờ địa phương
+
     var currentWeather = weatherData.GetProperty("list")[0];
-    int remainingHours = 24 - DateTime.Now.Hour;
+
+    // Lấy thông tin thời tiết theo từng giờ cho đến hết ngày
     var hourlyWeather = weatherData.GetProperty("list")
-    .EnumerateArray()
-    .Where(x =>
-    {
-        // Lấy thời gian từ dữ liệu API và chuyển đổi nó thành DateTime
-        DateTime forecastTime = DateTime.Parse(x.GetProperty("dt_txt").GetString());
-        
-        // Kiểm tra xem thời gian dự báo có sau thời gian hiện tại không và không bị trùng lặp
-        return forecastTime > DateTime.Now; // Lọc các giờ sau giờ hiện tại
-    })
-    .Take(remainingHours) // Lấy các giờ tiếp theo cho đến hết ngày
-    .ToList();
+        .EnumerateArray()
+        .Where(x =>
+        {
+            // Lấy thời gian từ API và chuyển đổi sang giờ địa phương
+            var forecastTimeUtc = DateTime.Parse(x.GetProperty("dt_txt").GetString());
+            var forecastTimeLocal = forecastTimeUtc.AddSeconds(timezoneOffset);
+
+            // Chỉ lấy các dự báo từ thời gian hiện tại
+            return forecastTimeLocal > nowLocal;
+        })
+        .Take(24) // Lấy dự báo cho 24 giờ tiếp theo (nếu có)
+        .ToList();
+
+    // Lấy thông tin thời tiết hàng ngày
     var dailyWeather = weatherData.GetProperty("list").EnumerateArray()
-                                    .GroupBy(x => DateTime.Parse(x.GetProperty("dt_txt").GetString()).Date)
-                                    .Select(g => g.First())
-                                    .Skip(1) // Bỏ ngày hiện tại
-                                    .Take(5); // 5 ngày tiếp theo
+        .GroupBy(x => DateTime.Parse(x.GetProperty("dt_txt").GetString())
+        .AddSeconds(timezoneOffset).Date) // Nhóm theo ngày địa phương
+        .Select(g => g.First())
+        .Skip(1) // Bỏ ngày hiện tại
+        .Take(5); // Lấy 5 ngày tiếp theo
 
     return new WeatherResponse
     {
         City = weatherData.GetProperty("city").GetProperty("name").GetString(),
         Current = new CurrentWeather
         {
-            Time = DateTime.Parse(currentWeather.GetProperty("dt_txt").GetString()).ToString("HH:mm, dd/MM/yyyy"),
+            Time = nowLocal.ToString("HH:mm, dd/MM/yyyy"),
             Temp = currentWeather.GetProperty("main").GetProperty("temp").GetDecimal(),
             Weather = currentWeather.GetProperty("weather")[0].GetProperty("description").GetString()
         },
-        Hourly = hourlyWeather.Select(x => new HourlyWeather
+        Hourly = hourlyWeather.Select(x =>
         {
-            Time = DateTime.Parse(x.GetProperty("dt_txt").GetString()).ToString("HH:mm"),
-            Temp = x.GetProperty("main").GetProperty("temp").GetDecimal(),
-            Weather = x.GetProperty("weather")[0].GetProperty("description").GetString()
-        }).ToList(),
-        Daily = dailyWeather
-            .GroupBy(x => x.GetProperty("dt_txt").GetString().Split(" ")[0]) // Nhóm theo ngày
-            .Select(group => new DailyWeather
+            var forecastTimeLocal = DateTime.Parse(x.GetProperty("dt_txt").GetString()).AddSeconds(timezoneOffset);
+            return new HourlyWeather
             {
-                Date = group.Key,
-                Temp = $"{group.Min(x => x.GetProperty("main").GetProperty("temp").GetDecimal())} - {group.Max(x => x.GetProperty("main").GetProperty("temp").GetDecimal())}",
-                Weather = group.First().GetProperty("weather")[0].GetProperty("description").GetString()
-            }).ToList(),
-        Reminder = GenerateReminder(currentWeather) // Logic nhắc nhở thời tiết
+                Time = forecastTimeLocal.ToString("HH:mm"), // Hiển thị theo giờ địa phương
+                Temp = x.GetProperty("main").GetProperty("temp").GetDecimal(),
+                Weather = x.GetProperty("weather")[0].GetProperty("description").GetString()
+            };
+        }).ToList(),
+        Daily = dailyWeather.Select(x =>
+        {
+            var dateLocal = DateTime.Parse(x.GetProperty("dt_txt").GetString()).AddSeconds(timezoneOffset).Date;
+            return new DailyWeather
+            {
+                Date = dateLocal.ToString("dd/MM/yyyy"),
+                Temp = $"{x.GetProperty("main").GetProperty("temp_min").GetDecimal()} - {x.GetProperty("main").GetProperty("temp_max").GetDecimal()}",
+                Weather = x.GetProperty("weather")[0].GetProperty("description").GetString()
+            };
+        }).ToList(),
+        Reminder = GenerateReminder(currentWeather)
     };
 }
+
 private string GenerateReminder(JsonElement currentWeather)
 {
     var description = currentWeather.GetProperty("weather")[0].GetProperty("description").GetString();
