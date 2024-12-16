@@ -37,9 +37,10 @@ public class WeatherService
         .AddSeconds(timezoneOffset).Date) // Nhóm theo ngày địa phương
         .Select(g => new DailyWeather
         {
-            Date = g.Key.ToString("dd/MM/yyyy"),
-            Temp = $"{g.Min(x => x.GetProperty("main").GetProperty("temp_min").GetDecimal())} - {g.Max(x => x.GetProperty("main").GetProperty("temp_max").GetDecimal())}",
-            Weather = g.First().GetProperty("weather")[0].GetProperty("description").GetString()
+            Date = g.Key.ToString("dd/MM/yyyy"), // Định dạng ngày
+            TempMin = Math.Truncate(g.Min(x => x.GetProperty("main").GetProperty("temp_min").GetDecimal())), // Lấy nhiệt độ thấp nhất và làm tròn
+            TempMax = Math.Truncate(g.Max(x => x.GetProperty("main").GetProperty("temp_max").GetDecimal())), // Lấy nhiệt độ cao nhất và làm tròn
+            Weather = g.First().GetProperty("weather")[0].GetProperty("description").GetString() // Lấy mô tả thời tiết
         })
         .Skip(1) // Bỏ ngày hiện tại
         .Take(5) // Lấy 5 ngày tiếp theo
@@ -120,6 +121,7 @@ public class HourlyWeather
 public class DailyWeather
 {
     public string Date { get; set; }
-    public string Temp { get; set; }
+    public decimal TempMin { get; set; }
+    public decimal TempMax { get; set; }
     public string Weather { get; set; }
 }
